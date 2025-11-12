@@ -299,24 +299,9 @@ st.markdown('<div class="header"><h1>Interactive Supermarket Simulation with Ass
 
 with st.sidebar:
     st.header("Data Sources")
-    st.caption("Upload your s or use the provided classroom defaults if available.")
-    up_tx = st.file_uploader("Transactions (comma-separated items per row)", type=None, key="tx_upload")
-    up_prod = st.file_uploader("Products (valid product names)", type=None, key="prod_upload")
-
+    
     default_tx = pd.read_csv('./assignment_data_mining/sample_transactions.csv')
     default_prod = pd.read_csv('./assignment_data_mining/products.csv')
-
-    if up_tx is not None:
-        tx_df_raw = pd.read_csv(up_tx)
-    elif default_tx is not None:
-        tx_df_raw = default_tx
-    else:
-        tx_df_raw = pd.DataFrame({'items': []})
-
-    if up_prod is not None:
-        prod_df_raw = pd.read_csv(up_prod)
-    else:
-        prod_df_raw = default_prod if default_prod is not None else pd.DataFrame({'name': []})
 
     st.divider()
     st.header("Mining Parameters")
