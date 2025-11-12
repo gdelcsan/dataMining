@@ -10,10 +10,10 @@ st.markdown("""
     <style>
     /* Sidebar container */
     section[data-testid="stSidebar"] {
-        color: #000000;
+        color: #ffffff;
         text-align: center;
-        background-color: #FEEBE7;
-        background-image: linear-gradient(120deg, #FEEBE7, #FCC6BB);
+        background-color: #9CE6E6;
+        background-image: linear-gradient(120deg, #9CE6E6, #2AA7A7);
         border-right: 1px solid rgba(27,31,35,0.1);  
     }
     section[data-testid="stSidebar"] label { color: white; }
@@ -21,7 +21,7 @@ st.markdown("""
     /* Buttons */
     .stButton > button {
         color: white;
-        background-color: #F4320B;
+        background-color: #D55858;
         border: none;
         border-radius: 9999px;
         padding: 0.6rem 1.2rem;
@@ -29,8 +29,8 @@ st.markdown("""
         transition: all 0.2s ease-in-out;
     }
     .stButton > button:hover {
-        background-color: #1C349E;
-        background-image: linear-gradient(90deg, #F4320B, #9C2007);
+        background-color: #D55858;
+        background-image: linear-gradient(90deg, #D55858, #A72A2A);
         transform: scale(1.02);
     }
 
@@ -40,7 +40,7 @@ st.markdown("""
         padding: 2.5rem 1rem;
         font-size: 2.5rem;             
         font-weight: 800;
-        background: linear-gradient(90deg, #F4320B, #9C2007); 
+        background: linear-gradient(90deg, #D55858, #A72A2A); 
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
