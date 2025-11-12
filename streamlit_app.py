@@ -5,6 +5,54 @@ import time
 from itertools import combinations, chain
 from pathlib import Path
 
+# Style
+st.markdown("""
+    <style>
+    /* Sidebar container */
+    section[data-testid="stSidebar"] {
+        color: #ffffff;
+        text-align: center;
+        background-color: #B8E3FC;
+        background-image: linear-gradient(120deg, #4158C4, #4DB4F0);
+        border-right: 1px solid rgba(27,31,35,0.1);  
+    }
+    section[data-testid="stSidebar"] label { color: white; }
+
+    /* Buttons */
+    .stButton > button {
+        color: white;
+        background-color: #F4320B;
+        border: none;
+        border-radius: 9999px;
+        padding: 0.6rem 1.2rem;
+        font-weight: 600;
+        transition: all 0.2s ease-in-out;
+    }
+    .stButton > button:hover {
+        background-color: #1C349E;
+        background-image: linear-gradient(90deg, #F4320B, #9C2007);
+        transform: scale(1.02);
+    }
+
+    /* Title gradient */
+    .header {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        font-size: 2.5rem;             
+        font-weight: 800;
+        background: linear-gradient(90deg, #F4320B, #9C2007); 
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Tabs */
+    .stTabs [aria-selected="false"] { color: #000000; 
+    }
+    
+    </style>
+""", unsafe_allow_html=True)
+
 # ------------------------------
 # Helpers
 # ------------------------------
@@ -247,7 +295,7 @@ def eclat(transactions, min_support=0.2):
 # ------------------------------
 
 st.set_page_config(page_title="Supermarket Miner", page_icon="🛒", layout="wide")
-st.title("🛒 Interactive Supermarket Simulation + Association Rule Mining")
+st.title("Interactive Supermarket Simulation with Association Rule Mining")
 
 with st.sidebar:
     st.header("Data Sources")
