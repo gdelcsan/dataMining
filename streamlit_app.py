@@ -302,11 +302,11 @@ prod_df_raw = safe_read_csv(PROD_PATH)
 
 # Stop if missing
 if tx_df_raw.empty:
-    st.error(f"❌ Could not load transactions file at: {TX_PATH}")
+    st.error(f"Could not load transactions file at: {TX_PATH}")
     st.stop()
 
 if prod_df_raw.empty:
-    st.warning(f"⚠️ No products file found at: {PROD_PATH}. Continuing without validation.")
+    st.warning(f"No products file found at: {PROD_PATH}. Continuing without validation.")
 
 # ------------------------------
 # Sidebar mining parameters
@@ -368,7 +368,7 @@ if st.session_state.manual_txs:
         # place manual only
         combined_df = extra
 
-run_prep = st.button("Run Preprocessing")
+run_prep = st.button("Reprocess")
 if 'cleaned' not in st.session_state:
     st.session_state.cleaned = None
     st.session_state.report = None
@@ -393,7 +393,7 @@ if st.session_state.cleaned is not None:
             st.metric("Valid transactions (after)", r['after_valid_tx'])
         st.caption(f"Total items: {r['total_items']} • Unique products: {r['unique_products']}")
 
-    st.subheader("Cleaned Transactions (sample)")
+    st.subheader("Cleaned Transactions")
     sample = [' , '.join(sorted(t)) for t in st.session_state.cleaned[:25]]
     st.dataframe(pd.DataFrame({'transaction': sample}), use_container_width=True, hide_index=True)
 
@@ -402,8 +402,8 @@ st.divider()
 # ------------------------------
 # 3) Run Mining (Apriori & Eclat)
 
-st.subheader("3) Run Mining (Apriori & Eclat)")
-run_mining = st.button("🧠 Analyze")
+st.subheader("Data Mine (Apriori & Eclat)")
+run_mining = st.button("Analyze")
 
 if 'results' not in st.session_state:
     st.session_state.results = {}
@@ -456,7 +456,7 @@ if st.session_state.get('results'):
     with st.expander("Show technical rules (Eclat)"):
         st.dataframe(pd.DataFrame(res['eclat']['rules']), use_container_width=True)
 
-    st.subheader("4) Query Recommendations")
+    st.subheader("Query Recommendations")
     if res['apriori']['freq'] and res['apriori']['freq'].get(1, {}):
         one_item_sets = list(res['apriori']['freq'][1].keys())
         all_items = sorted(set(chain.from_iterable([list(s) for s in one_item_sets])))
