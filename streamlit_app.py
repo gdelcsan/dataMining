@@ -295,7 +295,7 @@ def eclat(transactions, min_support=0.2):
 # ------------------------------
 
 st.set_page_config(page_title="Supermarket Miner", page_icon="🛒", layout="wide")
-st.title('<div class="header"><h1>Interactive Supermarket Simulation with Association Rule Mining</h1></div>', unsafe_allow_html=True)
+st.markdown('<div class="header"><h1>Interactive Supermarket Simulation with Association Rule Mining</h1></div>', unsafe_allow_html=True)
 
 with st.sidebar:
     st.header("Data Sources")
