@@ -312,17 +312,10 @@ with st.sidebar:
 if 'manual_txs' not in st.session_state:
     st.session_state.manual_txs = []
 
-# Product palette
-if prod_df_raw is not None and not prod_df_raw.empty:
-    cols = [c.lower() for c in prod_df_raw.columns]
-    prod_df_raw.columns = cols
-    name_col = 'name' if 'name' in cols else cols[-1]
-    product_names = sorted({normalize_item(x) for x in prod_df_raw[name_col].astype(str) if normalize_item(x)})
-else:
-    product_names = [
-        'milk','bread','eggs','butter','cheese','apples','bananas','cereal','coffee','tea',
-        'yogurt','juice','chicken','beef','rice','pasta','tomato','onion','lettuce','cookies'
-    ]
+product_names = [
+    'milk','bread','eggs','butter','cheese','apples','bananas','cereal','coffee','tea',
+    'yogurt','juice','chicken','beef','rice','pasta','tomato','onion','lettuce','cookies'
+]
 
 st.subheader("1) Create Transactions Manually")
 col1, col2 = st.columns([2,1])
