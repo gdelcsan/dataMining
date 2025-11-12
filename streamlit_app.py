@@ -59,7 +59,7 @@ st.markdown("""
 
 def load_default_csv(name: str) -> pd.DataFrame | None:
     """Tries to load a CSV bundled in this environment (classroom uploads)."""
-    p = Path('/assignment_data_mining')/name
+    p = Path('./assignment_data_mining')/name
     if p.exists():
         try:
             return pd.read_csv(p)
@@ -317,11 +317,11 @@ prod_df_raw = safe_read_csv(PROD_PATH)
 
 # Stop if missing
 if tx_df_raw.empty:
-    st.error(f"❌ Could not load transactions file at: {TX_PATH}")
+    st.error(f"Could not load transactions file at: {TX_PATH}")
     st.stop()
 
 if prod_df_raw.empty:
-    st.warning(f"⚠️ No products file found at: {PROD_PATH}. Continuing without validation.")
+    st.warning(f"No products file found at: {PROD_PATH}. Continuing without validation.")
 
 st.sidebar.header("Mining Parameters")
 min_support = st.sidebar.slider("Minimum Support", 0.05, 0.9, 0.2, 0.05)
@@ -374,7 +374,7 @@ if st.session_state.manual_txs:
         # place manual only
         combined_df = extra
 
-run_prep = st.button("🚿 Run Preprocessing")
+run_prep = st.button("Run Preprocessing")
 if 'cleaned' not in st.session_state:
     st.session_state.cleaned = None
     st.session_state.report = None
@@ -407,7 +407,7 @@ st.divider()
 
 # Mining section
 st.subheader("3) Run Mining (Apriori & Eclat)")
-run_mining = st.button("🧠 Analyze")
+run_mining = st.button("Analyze")
 
 if 'results' not in st.session_state:
     st.session_state.results = {}
