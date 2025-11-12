@@ -87,7 +87,7 @@ def safe_read_csv(path_str: str) -> pd.DataFrame:
 
 def preprocess_transactions(df: pd.DataFrame, products_df: pd.DataFrame):
     """Perform required cleaning and return cleaned transactions + report dict."""
-    # Expect columns: Transaction / Items Purchased  OR  a single column 'items' with comma sep
+    
     if df.shape[1] == 1:
         df = df.copy()
         df.columns = ['items']
@@ -102,7 +102,7 @@ def preprocess_transactions(df: pd.DataFrame, products_df: pd.DataFrame):
     tx_lists = []
     for raw in df['items'].astype(str).fillna(""):
         if "," in raw:
-            tx_lists.append([normalize_item(x) for x in raw.split(',') if normalize_item(x)])
+            tx_lists.append([normalize_item(x) for x in raw.split(', ') if normalize_item(x)])
         else:
             parts = [normalize_item(x) for x in raw.split(' ') if normalize_item(x)]
             tx_lists.append(parts)
