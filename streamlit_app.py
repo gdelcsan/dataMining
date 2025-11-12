@@ -13,7 +13,7 @@ st.markdown("""
         color: #ffffff;
         text-align: center;
         background-color: #9CE6E6;
-        background-image: linear-gradient(120deg, #9CE6E6, #2AA7A7);
+        background-image: linear-gradient(120deg, #33CCCC, #2AA7A7);
         border-right: 1px solid rgba(27,31,35,0.1);  
     }
     section[data-testid="stSidebar"] label { color: white; }
