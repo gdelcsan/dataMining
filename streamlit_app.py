@@ -355,7 +355,7 @@ with col2:
 # 2) Imported Transactions (raw preview)
 
 st.subheader("Imported Transactions (raw preview)")
-st.dataframe(tx_df_raw.head(12), use_container_width=True)
+st.dataframe(tx_df_raw.head(100), use_container_width=True)
 
 # Combine imported + manual for preprocessing
 combined_df = tx_df_raw.copy()
