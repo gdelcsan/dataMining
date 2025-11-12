@@ -349,7 +349,7 @@ with col1:
         else:
             st.warning("Single-item transactions are ignored for mining.")
 with col2:
-    if st.button("🧹 Clear Manual Transactions"):
+    if st.button("Clear Manual Transactions"):
         st.session_state.manual_txs = []
 
 # ------------------------------
