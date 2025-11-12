@@ -333,13 +333,13 @@ prod_df_raw = safe_read_csv("/assignment_data_mining/products.csv")
 
 # Guard: stop gracefully if transactions file is missing/empty
 if tx_df_raw.empty:
-    st.info("No transactions found at /mnt/data/sample_transactions.csv. "
+    st.info("No transactions found at /assignment_data_mining/sample_transactions.csv. "
             "Add the file or re-enable the uploader.")
     st.stop()
 
 # Optional: also guard the products file (only needed if you validate product names)
 if prod_df_raw.empty:
-    st.warning("No products file at /mnt/data/products.csv. "
+    st.warning("No products file at /assignment_data_mining/products.csv. "
                "Continuing without product validation.")
 
 st.subheader("Imported Transactions (raw preview)")
