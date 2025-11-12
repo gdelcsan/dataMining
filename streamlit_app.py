@@ -352,10 +352,10 @@ with col2:
         st.session_state.manual_txs = []
 
 # ------------------------------
-# 2) Imported Transactions (raw preview)
+# 2) Imported Transactions
 
-st.subheader("Imported Transactions (raw preview)")
-st.dataframe(tx_df_raw.head(100), use_container_width=True)
+st.subheader("Imported Transactions")
+st.dataframe(tx_df_raw.head(150), use_container_width=True)
 
 # Combine imported + manual for preprocessing
 combined_df = tx_df_raw.copy()
