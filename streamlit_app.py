@@ -317,24 +317,32 @@ product_names = [
     'yogurt','juice','chicken','beef','rice','pasta','tomato','onion','lettuce','cookies'
 ]
 
-st.subheader("1) Create Transactions Manually")
-col1, col2 = st.columns([2,1])
-with col1:
-    sel = st.multiselect("Select products to add as a transaction:", options=product_names, key="picker")
-    add = st.button("➕ Add Transaction", type="primary")
-    if add and sel:
-        norm = [normalize_item(x) for x in sel if normalize_item(x)]
-        norm = sorted(set(norm))
-        if len(norm) > 1:
-            st.session_state.manual_txs.append(norm)
-        else:
-            st.warning("Single-item transactions are ignored for mining.")
-with col2:
-    if st.button("🧹 Clear Manual Transactions"):
-        st.session_state.manual_txs = []
+def safe_read_csv(path_str: str) -> pd.DataFrame:
+    p = Path(path_str)
+    if not p.exists():
+        return pd.DataFrame()
+    try:
+        return pd.read_csv(p)
+    except Exception as e:
+        st.error(f"Couldn't read {p.name}: {e}")
+        return pd.DataFrame()
 
-# Show raw imported transactions sample
-st.subheader("2) Imported Transactions (raw preview)")
+# Always try local files first (since you're not using uploaders)
+tx_df_raw  = safe_read_csv("/assignmnet_data_mining/sample_transactions.csv")
+prod_df_raw = safe_read_csv("/assignmnet_data_mining/products.csv")
+
+# Guard: stop gracefully if transactions file is missing/empty
+if tx_df_raw.empty:
+    st.info("No transactions found at /mnt/data/sample_transactions.csv. "
+            "Add the file or re-enable the uploader.")
+    st.stop()
+
+# Optional: also guard the products file (only needed if you validate product names)
+if prod_df_raw.empty:
+    st.warning("No products file at /mnt/data/products.csv. "
+               "Continuing without product validation.")
+
+st.subheader("Imported Transactions (raw preview)")
 st.dataframe(tx_df_raw.head(12), use_container_width=True)
 
 # Combine imported + manual for preprocessing
