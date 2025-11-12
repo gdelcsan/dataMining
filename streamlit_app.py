@@ -102,7 +102,7 @@ def preprocess_transactions(df: pd.DataFrame, products_df: pd.DataFrame):
     tx_lists = []
     for raw in df['items'].astype(str).fillna(""):
         if "," in raw:
-            tx_lists.append([normalize_item(x) for x in raw.split(', ') if normalize_item(x)])
+            tx_lists.append([normalize_item(x) for x in raw.split(',') if normalize_item(x)])
         else:
             parts = [normalize_item(x) for x in raw.split(' ') if normalize_item(x)]
             tx_lists.append(parts)
@@ -291,9 +291,8 @@ def eclat(transactions, min_support=0.2):
     return by_k
 
 # ------------------------------
-# Load local CSVs directly 
+# Load local CSVs
 
-# Adjust these to your folder structure
 TX_PATH = "./assignment_data_mining/sample_transactions.csv"
 PROD_PATH = "./assignment_data_mining/products.csv"
 
@@ -334,7 +333,7 @@ else:
     ]
 
 # ------------------------------
-# 1) Create Transactions Manually (optional)
+# 1) Create Transactions Manually
 
 st.subheader("Create Transactions Manually")
 col1, col2 = st.columns([2,1])
