@@ -59,7 +59,7 @@ st.markdown("""
 
 def load_default_csv(name: str) -> pd.DataFrame | None:
     """Tries to load a CSV bundled in this environment (classroom uploads)."""
-    p = Path('/mnt/data')/name
+    p = Path('/assignment_data_mining')/name
     if p.exists():
         try:
             return pd.read_csv(p)
