@@ -252,8 +252,8 @@ st.title("🛒 Interactive Supermarket Simulation + Association Rule Mining")
 with st.sidebar:
     st.header("Data Sources")
     st.caption("Upload your s or use the provided classroom defaults if available.")
-    up_tx = st.file_uploader("Transactions  (comma-separated items per row)", type=[""], key="tx_upload")
-    up_prod = st.file_uploader("Products  (valid product names)", type=[""], key="prod_upload")
+    up_tx = st.file_uploader("Transactions (comma-separated items per row)", type=None, key="tx_upload")
+    up_prod = st.file_uploader("Products (valid product names)", type=None, key="prod_upload")
 
     default_tx = load_default_('./assignment_data_mining/sample_transactions.csv')
     default_prod = load_default_csv('./assignment_data_mining/products.csv')
