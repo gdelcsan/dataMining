@@ -297,16 +297,36 @@ def eclat(transactions, min_support=0.2):
 st.set_page_config(page_title="Supermarket Miner", page_icon="🛒", layout="wide")
 st.markdown('<div class="header"><h1>Interactive Supermarket Simulation with Association Rule Mining</h1></div>', unsafe_allow_html=True)
 
-with st.sidebar:
-    st.header("Data Sources")
-    
-    default_tx = pd.read_csv('./assignment_data_mining/sample_transactions.csv')
-    default_prod = pd.read_csv('./assignment_data_mining/products.csv')
+def safe_read_csv(path_str: str) -> pd.DataFrame:
+    """Safely load a CSV file or return empty DataFrame if missing or unreadable."""
+    p = Path(path_str)
+    if not p.exists():
+        st.error(f"File not found: {p}")
+        return pd.DataFrame()
+    try:
+        return pd.read_csv(p)
+    except Exception as e:
+        st.error(f"Error reading {p.name}: {e}")
+        return pd.DataFrame()
 
-    st.divider()
-    st.header("Mining Parameters")
-    min_support = st.slider("Minimum Support", 0.05, 0.9, 0.2, 0.05)
-    min_conf = st.slider("Minimum Confidence", 0.05, 0.95, 0.5, 0.05)
+# Adjust to your folder structure
+TX_PATH = "/assignment_data_mining/sample_transactions.csv"
+PROD_PATH = "/assignment_data_mining/products.csv"
+
+tx_df_raw = safe_read_csv(TX_PATH)
+prod_df_raw = safe_read_csv(PROD_PATH)
+
+# Stop if missing
+if tx_df_raw.empty:
+    st.error(f"❌ Could not load transactions file at: {TX_PATH}")
+    st.stop()
+
+if prod_df_raw.empty:
+    st.warning(f"⚠️ No products file found at: {PROD_PATH}. Continuing without validation.")
+
+st.sidebar.header("Mining Parameters")
+min_support = st.sidebar.slider("Minimum Support", 0.05, 0.9, 0.2, 0.05)
+min_conf = st.sidebar.slider("Minimum Confidence", 0.05, 0.95, 0.5, 0.05)
 
 # Session state for manual transactions
 if 'manual_txs' not in st.session_state:
