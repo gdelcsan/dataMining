@@ -328,8 +328,8 @@ def safe_read_csv(path_str: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 # Always try local files first (since you're not using uploaders)
-tx_df_raw  = safe_read_csv("/assignmnet_data_mining/sample_transactions.csv")
-prod_df_raw = safe_read_csv("/assignmnet_data_mining/products.csv")
+tx_df_raw  = safe_read_csv("/assignment_data_mining/sample_transactions.csv")
+prod_df_raw = safe_read_csv("/assignment_data_mining/products.csv")
 
 # Guard: stop gracefully if transactions file is missing/empty
 if tx_df_raw.empty:
