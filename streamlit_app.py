@@ -12,8 +12,8 @@ st.markdown("""
     section[data-testid="stSidebar"] {
         color: #000000;
         text-align: center;
-        background-color: #B8E3FC;
-        background-image: linear-gradient(120deg, #4158C4, #4DB4F0);
+        background-color: #FEEBE7;
+        background-image: linear-gradient(120deg, #FEEBE7, #FCC6BB);
         border-right: 1px solid rgba(27,31,35,0.1);  
     }
     section[data-testid="stSidebar"] label { color: white; }
