@@ -10,7 +10,7 @@ st.markdown("""
     <style>
     /* Sidebar container */
     section[data-testid="stSidebar"] {
-        color: #ffffff;
+        color: #000000;
         text-align: center;
         background-color: #B8E3FC;
         background-image: linear-gradient(120deg, #4158C4, #4DB4F0);
@@ -295,7 +295,7 @@ def eclat(transactions, min_support=0.2):
 # ------------------------------
 
 st.set_page_config(page_title="Supermarket Miner", page_icon="🛒", layout="wide")
-st.title("Interactive Supermarket Simulation with Association Rule Mining")
+st.title('<div class="header"><h1>Interactive Supermarket Simulation with Association Rule Mining</h1></div>', unsafe_allow_html=True)
 
 with st.sidebar:
     st.header("Data Sources")
