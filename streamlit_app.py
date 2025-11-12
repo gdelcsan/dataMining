@@ -1,3 +1,4 @@
+# streamlit_app.py
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -5,74 +6,34 @@ import time
 from itertools import combinations, chain
 from pathlib import Path
 
-# Style
-st.markdown("""
-    <style>
-    /* Sidebar container */
-    section[data-testid="stSidebar"] {
-        color: #ffffff;
-        text-align: center;
-        background-color: #9CE6E6;
-        background-image: linear-gradient(120deg, #33CCCC, #2AA7A7);
-        border-right: 1px solid rgba(27,31,35,0.1);  
-    }
-    section[data-testid="stSidebar"] label { color: white; }
+# ------------------------------
+# Page config & title
 
-    /* Buttons */
-    .stButton > button {
-        color: white;
-        background-color: #D55858;
-        border: none;
-        border-radius: 9999px;
-        padding: 0.6rem 1.2rem;
-        font-weight: 600;
-        transition: all 0.2s ease-in-out;
-    }
-    .stButton > button:hover {
-        background-color: #D55858;
-        background-image: linear-gradient(90deg, #D55858, #A72A2A);
-        transform: scale(1.02);
-    }
-
-    /* Title gradient */
-    .header {
-        text-align: center;
-        padding: 2.5rem 1rem;
-        font-size: 2.5rem;             
-        font-weight: 800;
-        background: linear-gradient(90deg, #D55858, #A72A2A); 
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    /* Tabs */
-    .stTabs [aria-selected="false"] { color: #000000; 
-    }
-    
-    </style>
-""", unsafe_allow_html=True)
+st.set_page_config(page_title="Supermarket Miner", page_icon="🛒", layout="wide")
+st.markdown(
+    '<div class="header"><h1>Interactive Supermarket Simulation with Association Rule Mining</h1></div>',
+    unsafe_allow_html=True
+)
 
 # ------------------------------
 # Helpers
-# ------------------------------
-
-def load_default_csv(name: str) -> pd.DataFrame | None:
-    """Tries to load a CSV bundled in this environment (classroom uploads)."""
-    p = Path('./assignment_data_mining')/name
-    if p.exists():
-        try:
-            return pd.read_csv(p)
-        except Exception:
-            return None
-    return None
-
 
 def normalize_item(x: str) -> str:
     if not isinstance(x, str):
         return ""
     return " ".join(x.strip().lower().split())
 
+def safe_read_csv(path_str: str) -> pd.DataFrame:
+    """Safely load a CSV file or return empty DataFrame if missing or unreadable."""
+    p = Path(path_str)
+    if not p.exists():
+        st.error(f"File not found: {p}")
+        return pd.DataFrame()
+    try:
+        return pd.read_csv(p)
+    except Exception as e:
+        st.error(f"Error reading {p.name}: {e}")
+        return pd.DataFrame()
 
 def preprocess_transactions(df: pd.DataFrame, products_df: pd.DataFrame):
     """Perform required cleaning and return cleaned transactions + report dict."""
@@ -81,7 +42,7 @@ def preprocess_transactions(df: pd.DataFrame, products_df: pd.DataFrame):
         df = df.copy()
         df.columns = ['items']
     else:
-        # heuristics: use last non-empty column as items column
+        # heuristics: use last column as items column
         items_col = df.columns[-1]
         df = df[[items_col]].rename(columns={items_col: 'items'})
 
@@ -93,7 +54,6 @@ def preprocess_transactions(df: pd.DataFrame, products_df: pd.DataFrame):
         if "," in raw:
             tx_lists.append([normalize_item(x) for x in raw.split(',') if normalize_item(x)])
         else:
-            # space-separated or single token
             parts = [normalize_item(x) for x in raw.split(' ') if normalize_item(x)]
             tx_lists.append(parts)
 
@@ -101,7 +61,7 @@ def preprocess_transactions(df: pd.DataFrame, products_df: pd.DataFrame):
     empty_count = sum(1 for t in tx_lists if len(t) == 0)
     tx_lists = [t for t in tx_lists if len(t) > 0]
 
-    # standardize case/whitespace already done; remove duplicates within each transaction
+    # remove duplicates within each transaction
     dup_instances = 0
     deduped = []
     for t in tx_lists:
@@ -126,6 +86,7 @@ def preprocess_transactions(df: pd.DataFrame, products_df: pd.DataFrame):
         name_col = 'name' if 'name' in cols else (cols[-1] if cols else None)
         if name_col is not None:
             valid_names = set(normalize_item(x) for x in products_df[name_col].astype(str))
+
     cleaned = []
     for t in deduped:
         if valid_names is None:
@@ -135,7 +96,7 @@ def preprocess_transactions(df: pd.DataFrame, products_df: pd.DataFrame):
         invalid_instances += len(t) - len(keep)
         if len(keep) > 1:
             cleaned.append(keep)
-    
+
     after_total = len(cleaned)
     total_items = sum(len(t) for t in cleaned)
     unique_products = len(set(chain.from_iterable(cleaned)))
@@ -152,10 +113,8 @@ def preprocess_transactions(df: pd.DataFrame, products_df: pd.DataFrame):
     }
     return cleaned, report
 
-
 # ------------------------------
 # Apriori (from scratch)
-# ------------------------------
 
 def get_support(itemset, tx_list):
     count = 0
@@ -164,7 +123,6 @@ def get_support(itemset, tx_list):
         if s.issubset(t):
             count += 1
     return count / len(tx_list) if tx_list else 0.0
-
 
 def apriori(transactions, min_support=0.2):
     """Return dict: {k: {frozenset(items): support}} for each size k>=1."""
@@ -208,11 +166,8 @@ def apriori(transactions, min_support=0.2):
             break
     return L
 
-
 def generate_rules(freq_dict, min_conf=0.5, n_tx=1):
-    """Generate association rules (A -> B) with confidence >= min_conf.
-    Returns list of dicts: {antecedent, consequent, support, confidence, lift}.
-    """
+    """Generate association rules (A -> B) with confidence >= min_conf."""
     # build quick support lookup
     sup_lookup = {}
     for k, m in freq_dict.items():
@@ -248,10 +203,8 @@ def generate_rules(freq_dict, min_conf=0.5, n_tx=1):
     rules.sort(key=lambda x: (x['confidence'], x['lift']), reverse=True)
     return rules
 
-
 # ------------------------------
 # Eclat (from scratch)
-# ------------------------------
 
 def build_vertical_format(transactions):
     """Return dict item -> TID set."""
@@ -260,7 +213,6 @@ def build_vertical_format(transactions):
         for it in set(t):
             vert.setdefault(frozenset([it]), set()).add(tid)
     return vert
-
 
 def eclat_recursive(prefix, items_tidsets, min_support, n_tx, out):
     while items_tidsets:
@@ -277,7 +229,6 @@ def eclat_recursive(prefix, items_tidsets, min_support, n_tx, out):
                     new_items.append((item2, inter))
             eclat_recursive(new_prefix, new_items, min_support, n_tx, out)
 
-
 def eclat(transactions, min_support=0.2):
     vert = build_vertical_format(transactions)
     items = list(vert.items())
@@ -289,26 +240,10 @@ def eclat(transactions, min_support=0.2):
         by_k.setdefault(len(iset), {})[iset] = sup
     return by_k
 
-
 # ------------------------------
-# UI
-# ------------------------------
+# Load local CSVs directly 
 
-st.set_page_config(page_title="Supermarket Miner", page_icon="🛒", layout="wide")
-st.markdown('<div class="header"><h1>Interactive Supermarket Simulation with Association Rule Mining</h1></div>', unsafe_allow_html=True)
-
-def safe_read_csv(path_str: str) -> pd.DataFrame:
-    """Safely load a CSV file or return empty DataFrame if missing or unreadable."""
-    p = Path(path_str)
-    if not p.exists():
-        st.error(f"File not found: {p}")
-        return pd.DataFrame()
-    try:
-        return pd.read_csv(p)
-    except Exception as e:
-        st.error(f"Error reading {p.name}: {e}")
-        return pd.DataFrame()
-
+# Adjust these to your folder structure
 TX_PATH = "./assignment_data_mining/sample_transactions.csv"
 PROD_PATH = "./assignment_data_mining/products.csv"
 
@@ -317,49 +252,58 @@ prod_df_raw = safe_read_csv(PROD_PATH)
 
 # Stop if missing
 if tx_df_raw.empty:
-    st.error(f"Could not load transactions file at: {TX_PATH}")
+    st.error(f"❌ Could not load transactions file at: {TX_PATH}")
     st.stop()
 
 if prod_df_raw.empty:
-    st.warning(f"No products file found at: {PROD_PATH}. Continuing without validation.")
+    st.warning(f"⚠️ No products file found at: {PROD_PATH}. Continuing without validation.")
+
+# ------------------------------
+# Sidebar mining parameters
 
 st.sidebar.header("Mining Parameters")
 min_support = st.sidebar.slider("Minimum Support", 0.05, 0.9, 0.2, 0.05)
 min_conf = st.sidebar.slider("Minimum Confidence", 0.05, 0.95, 0.5, 0.05)
 
-# Session state for manual transactions
+# ------------------------------
+# Session state for manual transactions (optional)
+
 if 'manual_txs' not in st.session_state:
     st.session_state.manual_txs = []
 
-product_names = [
-    'milk','bread','eggs','butter','cheese','apples','bananas','cereal','coffee','tea',
-    'yogurt','juice','chicken','beef','rice','pasta','tomato','onion','lettuce','cookies'
-]
+# Derive product names from products.csv if available; else fallback to a palette
+if prod_df_raw is not None and not prod_df_raw.empty:
+    cols = [c.lower() for c in prod_df_raw.columns]
+    prod_df_raw.columns = cols
+    name_col = 'name' if 'name' in cols else cols[-1]
+    product_names = sorted({normalize_item(x) for x in prod_df_raw[name_col].astype(str) if normalize_item(x)})
+else:
+    product_names = [
+        'milk','bread','eggs','butter','cheese','apples','bananas','cereal','coffee','tea',
+        'yogurt','juice','chicken','beef','rice','pasta','tomato','onion','lettuce','cookies'
+    ]
 
-def safe_read_csv(path_str: str) -> pd.DataFrame:
-    p = Path(path_str)
-    if not p.exists():
-        return pd.DataFrame()
-    try:
-        return pd.read_csv(p)
-    except Exception as e:
-        st.error(f"Couldn't read {p.name}: {e}")
-        return pd.DataFrame()
+# ------------------------------
+# 1) Create Transactions Manually (optional)
 
-# Always try local files first (since you're not using uploaders)
-tx_df_raw  = safe_read_csv("./assignment_data_mining/sample_transactions.csv")
-prod_df_raw = safe_read_csv("./assignment_data_mining/products.csv")
+st.subheader("Create Transactions Manually")
+col1, col2 = st.columns([2,1])
+with col1:
+    sel = st.multiselect("Select products to add as a transaction:", options=product_names, key="picker")
+    add = st.button("➕ Add Transaction", type="primary")
+    if add and sel:
+        norm = [normalize_item(x) for x in sel if normalize_item(x)]
+        norm = sorted(set(norm))
+        if len(norm) > 1:
+            st.session_state.manual_txs.append(norm)
+        else:
+            st.warning("Single-item transactions are ignored for mining.")
+with col2:
+    if st.button("🧹 Clear Manual Transactions"):
+        st.session_state.manual_txs = []
 
-# Guard: stop gracefully if transactions file is missing/empty
-if tx_df_raw.empty:
-    st.info("No transactions found at ./assignment_data_mining/sample_transactions.csv. "
-            "Add the file or re-enable the uploader.")
-    st.stop()
-
-# Optional: also guard the products file (only needed if you validate product names)
-if prod_df_raw.empty:
-    st.warning("No products file at ./assignment_data_mining/products.csv. "
-               "Continuing without product validation.")
+# ------------------------------
+# 2) Imported Transactions (raw preview)
 
 st.subheader("Imported Transactions (raw preview)")
 st.dataframe(tx_df_raw.head(12), use_container_width=True)
@@ -405,9 +349,11 @@ if st.session_state.cleaned is not None:
 
 st.divider()
 
-# Mining section
+# ------------------------------
+# 3) Run Mining (Apriori & Eclat)
+
 st.subheader("3) Run Mining (Apriori & Eclat)")
-run_mining = st.button("Analyze")
+run_mining = st.button("🧠 Analyze")
 
 if 'results' not in st.session_state:
     st.session_state.results = {}
@@ -461,8 +407,11 @@ if st.session_state.get('results'):
         st.dataframe(pd.DataFrame(res['eclat']['rules']), use_container_width=True)
 
     st.subheader("4) Query Recommendations")
-    all_items = sorted(set(chain.from_iterable([list(s) for s in (res['apriori']['freq'].get(1, {}) or {}).keys()]))
-                     if res['apriori']['freq'] else sorted(product_names))
+    if res['apriori']['freq'] and res['apriori']['freq'].get(1, {}):
+        one_item_sets = list(res['apriori']['freq'][1].keys())
+        all_items = sorted(set(chain.from_iterable([list(s) for s in one_item_sets])))
+    else:
+        all_items = product_names
     picked = st.selectbox("Pick a product to see associated items:", options=all_items)
 
     def recommendations_for(item, rules):
@@ -478,7 +427,6 @@ if st.session_state.get('results'):
                             'support': r['support'],
                             'lift': r['lift']
                         }
-        # turn into list
         out = [
             {'item': k, 'confidence_pct': v['confidence']*100, 'support_pct': v['support']*100, 'lift': v['lift']}
             for k, v in agg.items()
@@ -493,7 +441,8 @@ if st.session_state.get('results'):
         with tab1:
             if ap_recs:
                 df = pd.DataFrame(ap_recs)
-                df['strength'] = pd.cut(df['confidence_pct'], bins=[0,40,70,100], labels=["Weak","Moderate","Strong"], include_lowest=True)
+                df['strength'] = pd.cut(df['confidence_pct'], bins=[0,40,70,100],
+                                        labels=["Weak","Moderate","Strong"], include_lowest=True)
                 st.dataframe(df, use_container_width=True, hide_index=True)
                 st.write(f"**Recommendation:** Consider bundling **{picked}** with the top 1–2 items above.")
             else:
@@ -501,12 +450,12 @@ if st.session_state.get('results'):
         with tab2:
             if ec_recs:
                 df = pd.DataFrame(ec_recs)
-                df['strength'] = pd.cut(df['confidence_pct'], bins=[0,40,70,100], labels=["Weak","Moderate","Strong"], include_lowest=True)
+                df['strength'] = pd.cut(df['confidence_pct'], bins=[0,40,70,100],
+                                        labels=["Weak","Moderate","Strong"], include_lowest=True)
                 st.dataframe(df, use_container_width=True, hide_index=True)
                 st.write(f"**Recommendation:** Consider placement and promotions pairing **{picked}** with the top items.")
             else:
                 st.info("No associations found for this item at current thresholds.")
 
 st.divider()
-
-st.caption("Tip: Save this file as `streamlit_app.py` and run locally with `streamlit run streamlit_app.py`.")
+st.caption("Tip: run with `streamlit run streamlit_app.py`. Files are loaded from /assignment_data_mining/.")
