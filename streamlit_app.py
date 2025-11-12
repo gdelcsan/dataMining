@@ -7,6 +7,56 @@ from itertools import combinations, chain
 from pathlib import Path
 
 # ------------------------------
+# Style
+
+st.markdown("""
+    <style>
+    /* Sidebar container */
+    section[data-testid="stSidebar"] {
+        color: #ffffff;
+        text-align: center;
+        background-color: #9CE6E6;
+        background-image: linear-gradient(120deg, #33CCCC, #2AA7A7);
+        border-right: 1px solid rgba(27,31,35,0.1);  
+    }
+    section[data-testid="stSidebar"] label { color: white; }
+
+    /* Buttons */
+    .stButton > button {
+        color: white;
+        background-color: #D55858;
+        border: none;
+        border-radius: 9999px;
+        padding: 0.6rem 1.2rem;
+        font-weight: 600;
+        transition: all 0.2s ease-in-out;
+    }
+    .stButton > button:hover {
+        background-color: #D55858;
+        background-image: linear-gradient(90deg, #D55858, #A72A2A);
+        transform: scale(1.02);
+    }
+
+    /* Title gradient */
+    .header {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        font-size: 2.5rem;             
+        font-weight: 800;
+        background: linear-gradient(90deg, #D55858, #A72A2A); 
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Tabs */
+    .stTabs [aria-selected="false"] { color: #000000; 
+    }
+    
+    </style>
+""", unsafe_allow_html=True)
+
+# ------------------------------
 # Page config & title
 
 st.set_page_config(page_title="Supermarket Miner", page_icon="🛒", layout="wide")
