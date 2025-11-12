@@ -309,9 +309,8 @@ def safe_read_csv(path_str: str) -> pd.DataFrame:
         st.error(f"Error reading {p.name}: {e}")
         return pd.DataFrame()
 
-# Adjust to your folder structure
-TX_PATH = "/assignment_data_mining/sample_transactions.csv"
-PROD_PATH = "/assignment_data_mining/products.csv"
+TX_PATH = "./assignment_data_mining/sample_transactions.csv"
+PROD_PATH = "./assignment_data_mining/products.csv"
 
 tx_df_raw = safe_read_csv(TX_PATH)
 prod_df_raw = safe_read_csv(PROD_PATH)
