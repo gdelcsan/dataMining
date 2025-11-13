@@ -40,8 +40,8 @@ st.markdown("""
     /* Title gradient */
     .header {
         text-align: center;
-        padding: 2.5rem 1rem;
-        font-size: 2.5rem;             
+        padding: 1rem 1rem;
+        font-size: 5rem;             
         font-weight: 800;
         background: linear-gradient(90deg, #D55858, #A72A2A); 
         -webkit-background-clip: text;
