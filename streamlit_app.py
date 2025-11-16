@@ -59,10 +59,7 @@ st.markdown("""
 # Page config & title
 
 st.set_page_config(page_title="Supermarket Miner", page_icon="🛒", layout="wide")
-st.markdown(
-    '<div class="header"><h1>Interactive Supermarket Simulator</h1></div>',
-    unsafe_allow_html=True
-)
+st.markdown('<div class="header"><h1>Interactive Supermarket Simulator</h1></div>',unsafe_allow_html=True)
 
 # ------------------------------
 # Helpers
@@ -303,18 +300,17 @@ if prod_df_raw.empty:
 # ------------------------------
 # Sidebar mining parameters + custom upload
 
-st.sidebar.header("Mining Parameters")
-min_support = st.sidebar.slider("Minimum Support", 0.05, 0.9, 0.2, 0.05)
-min_conf = st.sidebar.slider("Minimum Confidence", 0.05, 0.95, 0.5, 0.05)
-
 st.sidebar.header("Custom Transactions CSV")
 uploaded_file = st.sidebar.file_uploader(
     "Upload CSV to replace default transactions",
     type=["csv"]
 )
 
+st.sidebar.header("Mining Parameters")
+min_support = st.sidebar.slider("Minimum Support", 0.05, 0.9, 0.2, 0.05)
+min_conf = st.sidebar.slider("Minimum Confidence", 0.05, 0.95, 0.5, 0.05)
+
 # ------------------------------
-# Session state for manual transactions (optional)
 
 if 'manual_txs' not in st.session_state:
     st.session_state.manual_txs = []
