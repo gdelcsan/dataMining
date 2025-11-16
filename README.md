@@ -11,9 +11,8 @@
 
 #### System Overview
 
-[2-3 sentences describing what your application does]
-
-
+This application lets users upload or create their own supermarket transaction data and automatically analyzes it using association rule
+mining. It helps identify which products are commonly bought together, generates useful recommendations, and displays the results clearly.
 
 #### Technical Stack
 
@@ -21,36 +20,32 @@
 - **Key Libraries**: [List main dependencies]
 - **UI Framework**: [If applicable]
 
-
-
 #### Installation
 
 ##### Prerequisites
-- [e.g., Python 3.8+, Node.js 14+, Java 11+]
-- [Other requirements]
+- Python 3.10+
+- Streamlit
 
 ##### Setup
-```bash
+
 # Clone or extract project
-cd [project-directory]
+(https://github.com/gdelcsan/dataMining.git)
 
 # Install dependencies
-[command to install dependencies]
+pip install streamlit pandas numpy
 
 # Run application
-[command to start application]
+streamlit run streamlit_app.py
 ```
-
-
 
 #### Usage
 
 ##### 1. Load Data
 - **Manual Entry**: Click items to create transactions
-- **Import CSV**: Use "Import" button to load `sample_transactions.csv`
+- **Import CSV**: sample_transactions.csv is default file, click "browse files" to import custom csv file
 
 ##### 2. Preprocess Data
-- Click "Run Preprocessing"
+- Click "Preprocess"
 - Review cleaning report (empty transactions, duplicates, etc.)
 
 ##### 3. Run Mining
@@ -63,28 +58,29 @@ cd [project-directory]
 - View associated items and recommendation strength
 - Optional: View technical details (raw rules, performance metrics)
 
-
-
 #### Algorithm Implementation
 
 ##### Apriori
-[2-3 sentences on your implementation approach]
-- Data structure: [e.g., dictionary of itemsets]
-- Candidate generation: [breadth-first, level-wise]
-- Pruning strategy: [minimum support]
+For my project, I implemented the Apriori algorithm using a step-by-step, level-based approach. I started by finding all the frequent single
+items and then gradually built larger itemsets as long as they met the minimum support threshold. At each stage, I reused the results from the
+previous level to keep the process efficient.
+- Data structure: I stored the frequent itemsets in a dictionary where each level maps to another dictionary of frozenset(itemset): support.
+This made it easy to look up supports and organize results.
+- Candidate generation: I used a level-wise/breadth-first approach, where I joined frequent (k–1)-itemsets with each other to produce new 
+item candidates.
+- Pruning strategy: Before accepting a candidate, I checked whether all of its subsets were already frequent, and then I filtered out anything
+that didn’t meet the minimum support. This helped reduce unnecessary calculations.
 
 ##### Eclat
-[2-3 sentences on your implementation approach]
-- Data structure: [e.g., TID-set representation]
-- Search strategy: [depth-first]
-- Intersection method: [set operations]
-
-##### CLOSET
-[2-3 sentences on your implementation approach]
-- Data structure: [e.g., FP-tree / prefix tree]
-- Mining approach: [closed itemsets only]
-- Closure checking: [method used]
-
+For the Eclat algorithm, I took a different approach by using a vertical data format instead of scanning full transactions each time. I
+converted the dataset into item transaction ID sets, which let me compute support using simple set intersections. This made it faster to
+explore combinations of items compared to Apriori.
+- Data structure: I kept the data in a dictionary where each key is a frozenset([item]) and each value contains all the transaction IDs that
+include that item.
+- Search strategy: I followed a depth-first search approach. The algorithm drills down into one itemset at a time, expanding it as far as
+possible before backtracking.
+- Intersection method: I used Python’s set operations to intersect TID sets. This allows me to quickly check how many transactions two itemsets
+share and whether they meet minimum support.
 
 
 #### Performance Results
@@ -95,13 +91,11 @@ Tested on provided dataset (80-100 transactions after cleaning):
 |-----------|--------------|-----------------|--------------|
 | Apriori   | [value]      | [value]         | [value]      |
 | Eclat     | [value]      | [value]         | [value]      |
-| CLOSET    | [value]      | [value]         | [value]      |
 
 **Parameters**: min_support = 0.2, min_confidence = 0.5
 
-**Analysis**: [1-2 sentences explaining performance differences]
-
-
+**Analysis**: Overall, Eclat performed faster than Apriori because it uses set intersections instead of repeatedly scanning the entire dataset.
+Apriori took longer since it generates more candidate itemsets and relies on multiple passes over the transactions.
 
 #### Project Structure
 
@@ -109,20 +103,19 @@ Tested on provided dataset (80-100 transactions after cleaning):
 project-root/
 ├── src/
 │   ├── algorithms/
-│   │   ├── apriori.[py/js/java]
-│   │   ├── eclat.[py/js/java]
-│   │   └── closet.[py/js/java]
+│   │   ├── apriori.[py]
+│   │   └── eclat.[py]
 │   ├── preprocessing/
-│   │   └── cleaner.[py/js/java]
+│   │   └── cleaner.[py]
 │   ├── ui/
 │   │   └── [interface files]
-│   └── main.[py/js/java]
+│   └── main.[py]
 ├── data/
 │   ├── sample_transactions.csv
 │   └── products.csv
 ├── README.md
 ├── REPORT.pdf
-└── [requirements.txt / package.json / pom.xml]
+└── requirements.txt
 ```
 
 
@@ -149,27 +142,28 @@ Verified functionality:
 - [✓] Performance measurement
 
 Test cases:
-- [Describe 2-3 key test scenarios]
 
+First test case was using the default csv file. No transactions added, preprocessing and then analyzing.
 
+Second test case was using the default csv file. Adding a couple transactions and then preprocessing and analyzing to see what changes.
+
+Third test case was using an imported csv file, just the default which I edited so I could test the import feature. I tested it by itself and with adding transactions to see the changes.
 
 #### Known Limitations
 
-[List any known issues or constraints, if applicable]
-
-
+- Results depend on clean input data so messy or inconsistent entries may still affect accuracy.
+- Apriori can be slow on larger datasets due to heavy candidate generation.
+- Eclat may struggle when there are too many unique items since intersections get expensive.
+- The system is designed for small/medium datasets, not large production use. Also only 200 entries will show at a time in the table.
+- Uploaded CSVs with unusual formatting may require manual cleanup.
 
 #### AI Tool Usage
 
-[Required: 1 paragraph describing which AI tools you used and for what purpose]
-
-Example:
-"Used ChatGPT for explaining Eclat algorithm vertical representation and debugging file parsing errors. Used GitHub Copilot for generating UI boilerplate code. All generated code was reviewed, tested, and adapted for this specific implementation."
-
-
+For this project, I used AI tools such as ChatGPT to help generate more detailed comments on my code that I didn't know how to phrase and for debugging certain sections that I couldn't figure out what was wrong.
 
 #### References
 
 - Course lecture materials
-- [Algorithm papers or resources consulted]
-- [Library documentation links]
+- Google
+- Github (previous projects for reference)
+
