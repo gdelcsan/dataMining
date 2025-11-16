@@ -1,4 +1,3 @@
-# streamlit_app.py
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -67,14 +66,12 @@ st.markdown(
 
 # ------------------------------
 # Helpers
-
 def normalize_item(x: str) -> str:
     if not isinstance(x, str):
         return ""
     return " ".join(x.strip().lower().split())
 
 def safe_read_csv(path_str: str) -> pd.DataFrame:
-    """Safely load a CSV file or return empty DataFrame if missing or unreadable."""
     p = Path(path_str)
     if not p.exists():
         st.error(f"File not found: {p}")
@@ -85,20 +82,20 @@ def safe_read_csv(path_str: str) -> pd.DataFrame:
         st.error(f"Error reading {p.name}: {e}")
         return pd.DataFrame()
 
-def preprocess_transactions(df: pd.DataFrame, products_df: pd.DataFrame):
-    """Perform required cleaning and return cleaned transactions + report dict."""
-    
+# ------------------------------
+# Preprocessing
+def preprocess_transactions(df: pd.DataFrame, products_df: pd.DataFrame, flag_singles=False, strict_invalid=False):
+    """Clean data and return cleaned list + report."""
     if df.shape[1] == 1:
         df = df.copy()
         df.columns = ['items']
     else:
-        # heuristics: use last column as items column
         items_col = df.columns[-1]
         df = df[[items_col]].rename(columns={items_col: 'items'})
 
     before_total = len(df)
 
-    # split comma separated into lists
+    # split into lists
     tx_lists = []
     for raw in df['items'].astype(str).fillna(""):
         if "," in raw:
@@ -107,11 +104,11 @@ def preprocess_transactions(df: pd.DataFrame, products_df: pd.DataFrame):
             parts = [normalize_item(x) for x in raw.split(' ') if normalize_item(x)]
             tx_lists.append(parts)
 
-    # remove empties
+    # empty tx
     empty_count = sum(1 for t in tx_lists if len(t) == 0)
     tx_lists = [t for t in tx_lists if len(t) > 0]
 
-    # remove duplicates within each transaction
+    # duplicates
     dup_instances = 0
     deduped = []
     for t in tx_lists:
@@ -123,11 +120,14 @@ def preprocess_transactions(df: pd.DataFrame, products_df: pd.DataFrame):
                 dup_instances += 1
         deduped.append(seen)
 
-    # single-item handling: remove
+    # single-item handling
     single_count = sum(1 for t in deduped if len(t) == 1)
-    deduped = [t for t in deduped if len(t) > 1]
+    if flag_singles:
+        pass  # keep them
+    else:
+        deduped = [t for t in deduped if len(t) > 1]
 
-    # invalid product handling using products_df (if provided)
+    # invalid items
     invalid_instances = 0
     valid_names = None
     if products_df is not None and not products_df.empty:
@@ -144,28 +144,33 @@ def preprocess_transactions(df: pd.DataFrame, products_df: pd.DataFrame):
             continue
         keep = [it for it in t if it in valid_names]
         invalid_instances += len(t) - len(keep)
-        if len(keep) > 1:
+        if strict_invalid and len(keep) < len(t):
+            continue  # drop whole tx if any invalid
+        if len(keep) > 1 or (flag_singles and len(keep) == 1):
             cleaned.append(keep)
 
     after_total = len(cleaned)
     total_items = sum(len(t) for t in cleaned)
     unique_products = len(set(chain.from_iterable(cleaned)))
 
+    total_issues = empty_count + single_count + dup_instances + invalid_instances
+
     report = {
         'before_total_tx': before_total,
         'empty_tx_removed': empty_count,
-        'single_item_tx_removed': single_count,
+        'single_item_tx_removed': single_count if not flag_singles else 0,
+        'single_item_flagged': single_count if flag_singles else 0,
         'duplicate_items_removed': dup_instances,
         'invalid_items_removed': invalid_instances,
         'after_valid_tx': after_total,
         'total_items': total_items,
         'unique_products': unique_products,
+        'total_issues': total_issues
     }
     return cleaned, report
 
 # ------------------------------
-# Apriori (from scratch)
-
+# Apriori & Eclat 
 def get_support(itemset, tx_list):
     count = 0
     s = set(itemset)
@@ -175,8 +180,6 @@ def get_support(itemset, tx_list):
     return count / len(tx_list) if tx_list else 0.0
 
 def apriori(transactions, min_support=0.2):
-    """Return dict: {k: {frozenset(items): support}} for each size k>=1."""
-    # L1
     item_counts = {}
     n_tx = len(transactions)
     for t in transactions:
@@ -191,18 +194,15 @@ def apriori(transactions, min_support=0.2):
     k = 2
     current_L = L1
     while current_L:
-        # generate candidates by self-join
         cand = set()
         keys = list(current_L.keys())
         for i in range(len(keys)):
             for j in range(i+1, len(keys)):
                 union = keys[i] | keys[j]
                 if len(union) == k:
-                    # prune: all (k-1)-subsets must be frequent
                     all_subfreq = all((union - frozenset([x])) in current_L for x in union)
                     if all_subfreq:
                         cand.add(union)
-        # count support
         Ck = {}
         for c in cand:
             sup = get_support(c, transactions)
@@ -217,8 +217,6 @@ def apriori(transactions, min_support=0.2):
     return L
 
 def generate_rules(freq_dict, min_conf=0.5, n_tx=1):
-    """Generate association rules (A -> B) with confidence >= min_conf."""
-    # build quick support lookup
     sup_lookup = {}
     for k, m in freq_dict.items():
         for iset, sup in m.items():
@@ -230,7 +228,6 @@ def generate_rules(freq_dict, min_conf=0.5, n_tx=1):
             continue
         for iset, sup_ab in m.items():
             items = list(iset)
-            # all non-empty proper subsets as antecedents
             for r in range(1, len(items)):
                 for A in combinations(items, r):
                     A = frozenset(A)
@@ -249,15 +246,10 @@ def generate_rules(freq_dict, min_conf=0.5, n_tx=1):
                             'confidence': conf,
                             'lift': lift
                         })
-    # sort by confidence desc, then lift desc
     rules.sort(key=lambda x: (x['confidence'], x['lift']), reverse=True)
     return rules
 
-# ------------------------------
-# Eclat (from scratch)
-
 def build_vertical_format(transactions):
-    """Return dict item -> TID set."""
     vert = {}
     for tid, t in enumerate(transactions):
         for it in set(t):
@@ -271,7 +263,6 @@ def eclat_recursive(prefix, items_tidsets, min_support, n_tx, out):
         support = len(tidset)/n_tx if n_tx else 0
         if support >= min_support:
             out[new_prefix] = support
-            # intersect with remaining to build extensions
             new_items = []
             for (item2, tidset2) in items_tidsets:
                 inter = tidset & tidset2
@@ -284,43 +275,17 @@ def eclat(transactions, min_support=0.2):
     items = list(vert.items())
     out = {}
     eclat_recursive(frozenset(), items, min_support, len(transactions), out)
-    # group by k
     by_k = {}
     for iset, sup in out.items():
         by_k.setdefault(len(iset), {})[iset] = sup
     return by_k
 
 # ------------------------------
-# Load local CSVs
-
-TX_PATH = "./assignment_data_mining/sample_transactions.csv"
+#Load products
 PROD_PATH = "./assignment_data_mining/products.csv"
-
-tx_df_raw = safe_read_csv(TX_PATH)
 prod_df_raw = safe_read_csv(PROD_PATH)
 
-# Stop if missing
-if tx_df_raw.empty:
-    st.error(f"Could not load transactions file at: {TX_PATH}")
-    st.stop()
-
-if prod_df_raw.empty:
-    st.warning(f"No products file found at: {PROD_PATH}. Continuing without validation.")
-
-# ------------------------------
-# Sidebar mining parameters
-
-st.sidebar.header("Mining Parameters")
-min_support = st.sidebar.slider("Minimum Support", 0.05, 0.9, 0.2, 0.05)
-min_conf = st.sidebar.slider("Minimum Confidence", 0.05, 0.95, 0.5, 0.05)
-
-# ------------------------------
-# Session state for manual transactions (optional)
-
-if 'manual_txs' not in st.session_state:
-    st.session_state.manual_txs = []
-
-# Derive product names from products.csv if available; else fallback to a palette
+#Derive product names
 if prod_df_raw is not None and not prod_df_raw.empty:
     cols = [c.lower() for c in prod_df_raw.columns]
     prod_df_raw.columns = cols
@@ -328,183 +293,293 @@ if prod_df_raw is not None and not prod_df_raw.empty:
     product_names = sorted({normalize_item(x) for x in prod_df_raw[name_col].astype(str) if normalize_item(x)})
 else:
     product_names = [
-        'milk','bread','eggs','butter','cheese','apples','bananas','cereal','coffee','tea',
-        'yogurt','juice','chicken','beef','rice','pasta','tomato','onion','lettuce','cookies'
+        'milk','bread','eggs','butter','cheese','apple','banana','orange','coffee','tea',
+        'yogurt','juice','chicken','beef','rice','pasta','tomato','onion','garlic','pepper'
     ]
 
 # ------------------------------
-# 1) Create Transactions Manually
+# Sidebar
+st.sidebar.header("Mining Parameters")
+min_support = st.sidebar.slider("Minimum Support", 0.05, 0.9, 0.2, 0.05)
+min_conf = st.sidebar.slider("Minimum Confidence", 0.05, 0.95, 0.5, 0.05)
 
-st.subheader("Create Transactions Manually")
-col1, col2 = st.columns([2,1])
-with col1:
-    sel = st.multiselect("Select products to add as a transaction:", options=product_names, key="picker")
-    add = st.button("➕ Add Transaction", type="primary")
-    if add and sel:
-        norm = [normalize_item(x) for x in sel if normalize_item(x)]
-        norm = sorted(set(norm))
-        if len(norm) > 1:
-            st.session_state.manual_txs.append(norm)
-        else:
-            st.warning("Single-item transactions are ignored for mining.")
-with col2:
-    if st.button("Clear Manual Transactions"):
-        st.session_state.manual_txs = []
+# Preprocessing options
+st.sidebar.header("Preprocessing Options")
+flag_singles = st.sidebar.checkbox("Flag single-item transactions (instead of removing)", value=False)
+strict_invalid = st.sidebar.checkbox("Remove entire transaction if any item is invalid", value=False)
 
 # ------------------------------
-# 2) Imported Transactions
-
-st.subheader("Imported Transactions")
-st.dataframe(tx_df_raw.head(150), use_container_width=True)
-
-# Combine imported + manual for preprocessing
-combined_df = tx_df_raw.copy()
-if st.session_state.manual_txs:
-    extra = pd.DataFrame({'items': [", ".join(t) for t in st.session_state.manual_txs]})
-    if 'items' in combined_df.columns:
-        combined_df = pd.concat([combined_df[['items']], extra], ignore_index=True)
-    else:
-        # place manual only
-        combined_df = extra
-
-run_prep = st.button("Reprocess")
+# Session state
+if 'manual_cart' not in st.session_state:
+    st.session_state.manual_cart = []  # current cart
+if 'manual_txs' not in st.session_state:
+    st.session_state.manual_txs = []  # saved transactions
+if 'uploaded_df' not in st.session_state:
+    st.session_state.uploaded_df = None
 if 'cleaned' not in st.session_state:
     st.session_state.cleaned = None
+if 'report' not in st.session_state:
     st.session_state.report = None
-
-if run_prep:
-    cleaned, report = preprocess_transactions(combined_df, prod_df_raw)
-    st.session_state.cleaned = [set(t) for t in cleaned]
-    st.session_state.report = report
-
-if st.session_state.cleaned is not None:
-    st.success("Preprocessing complete.")
-    with st.expander("Preprocessing Report", expanded=True):
-        r = st.session_state.report
-        left, right = st.columns(2)
-        with left:
-            st.metric("Total transactions (before)", r['before_total_tx'])
-            st.metric("Empty transactions removed", r['empty_tx_removed'])
-            st.metric("Single-item tx removed", r['single_item_tx_removed'])
-        with right:
-            st.metric("Duplicate items removed", r['duplicate_items_removed'])
-            st.metric("Invalid items removed", r['invalid_items_removed'])
-            st.metric("Valid transactions (after)", r['after_valid_tx'])
-        st.caption(f"Total items: {r['total_items']} • Unique products: {r['unique_products']}")
-
-    st.subheader("Cleaned Transactions")
-    sample = [' , '.join(sorted(t)) for t in st.session_state.cleaned[:25]]
-    st.dataframe(pd.DataFrame({'transaction': sample}), use_container_width=True, hide_index=True)
-
-st.divider()
-
-# ------------------------------
-# 3) Run Mining (Apriori & Eclat)
-
-st.subheader("Data Mine (Apriori & Eclat)")
-run_mining = st.button("Analyze")
-
 if 'results' not in st.session_state:
     st.session_state.results = {}
 
-if run_mining:
-    if not st.session_state.cleaned:
-        st.error("Please run preprocessing first (and ensure you have at least 2-item transactions).")
+# ------------------------------
+#1) Create Transactions Manually
+st.subheader("Create Transactions Manually")
+cols = st.columns(5)
+for i, prod in enumerate(product_names[:20]):  # show at least 10
+    with cols[i % 5]:
+        if st.button(prod.title(), key=f"btn_{prod}"):
+            if prod not in st.session_state.manual_cart:
+                st.session_state.manual_cart.append(prod)
+                st.rerun()
+
+# Show current cart
+if st.session_state.manual_cart:
+    st.write("**Current cart:** " + ", ".join([p.title() for p in st.session_state.manual_cart]))
+
+col_add, col_clear = st.columns([1,1])
+with col_add:
+    if st.button("Add Transaction", type="primary"):
+        norm = sorted(set(st.session_state.manual_cart))
+        if len(norm) > 1 or flag_singles:
+            st.session_state.manual_txs.append(norm)
+            st.session_state.manual_cart = []
+            st.success("Transaction added!")
+            st.rerun()
+        else:
+            st.warning("Need at least 2 items.")
+with col_clear:
+    if st.button("Clear Cart"):
+        st.session_state.manual_cart = []
+        st.rerun()
+
+# Display all manual transactions
+if st.session_state.manual_txs:
+    manual_df = pd.DataFrame({
+        'transaction': [', '.join(t) for t in st.session_state.manual_txs]
+    })
+    with st.expander("Manual Transactions", expanded=False):
+        st.dataframe(manual_df, use_container_width=True, hide_index=True)
+
+# ------------------------------
+#2) Imported Transactions
+st.subheader("Import Transactions from CSV")
+uploaded_file = st.file_uploader("Upload sample_transactions.csv or any CSV", type="csv")
+
+if uploaded_file is not None:
+    try:
+        uploaded_df = pd.read_csv(uploaded_file)
+        st.session_state.uploaded_df = uploaded_df
+        st.success(f"{len(uploaded_df)} transactions loaded from uploaded file.")
+    except Exception as e:
+        st.error(f"Error reading uploaded file: {e}")
+else:
+    # fallback to local file if nothing uploaded
+    TX_PATH = "./assignment_data_mining/sample_transactions.csv"
+    if Path(TX_PATH).exists():
+        uploaded_df = safe_read_csv(TX_PATH)
+        if not uploaded_df.empty:
+            st.session_state.uploaded_df = uploaded_df
+            st.info(f"Loaded {len(uploaded_df)} transactions from local file.")
+
+# Show raw data and stats
+if st.session_state.uploaded_df is not None:
+    raw_df = st.session_state.uploaded_df.copy()
+    if raw_df.shape[1] > 1:
+        raw_df = raw_df[[raw_df.columns[-1]]].rename(columns={raw_df.columns[-1]: 'items'})
     else:
-        tx = [set(t) for t in st.session_state.cleaned]
-        # Apriori
-        t0 = time.perf_counter()
-        L_ap = apriori(tx, min_support=min_support)
-        rules_ap = generate_rules(L_ap, min_conf=min_conf, n_tx=len(tx))
-        t1 = time.perf_counter()
-        # Eclat
-        t2 = time.perf_counter()
-        L_ec = eclat(tx, min_support=min_support)
-        rules_ec = generate_rules(L_ec, min_conf=min_conf, n_tx=len(tx))
-        t3 = time.perf_counter()
+        raw_df.columns = ['items']
 
-        st.session_state.results = {
-            'apriori': {
-                'freq': L_ap,
-                'rules': rules_ap,
-                'runtime_ms': (t1 - t0)*1000
-            },
-            'eclat': {
-                'freq': L_ec,
-                'rules': rules_ec,
-                'runtime_ms': (t3 - t2)*1000
-            },
-            'n_tx': len(tx)
-        }
+    # basic stats
+    total_raw = len(raw_df)
+    all_items = [normalize_item(x) for x in raw_df['items'].astype(str).fillna("")]
+    unique_raw = len(set(chain.from_iterable([i.split(',') for i in all_items if i])))
 
-if st.session_state.get('results'):
-    res = st.session_state.results
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown("**Apriori**")
-        st.write(f"Runtime: {res['apriori']['runtime_ms']:.1f} ms")
-        st.write(f"Rules generated: {len(res['apriori']['rules'])}")
-    with c2:
-        st.markdown("**Eclat**")
-        st.write(f"Runtime: {res['eclat']['runtime_ms']:.1f} ms")
-        st.write(f"Rules generated: {len(res['eclat']['rules'])}")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Total transactions (raw)", total_raw)
+    with col2:
+        st.metric("Unique items (raw)", unique_raw)
 
-    # Display rules (toggle technical)
-    with st.expander("Show technical rules (Apriori)"):
-        st.dataframe(pd.DataFrame(res['apriori']['rules']), use_container_width=True)
-    with st.expander("Show technical rules (Eclat)"):
-        st.dataframe(pd.DataFrame(res['eclat']['rules']), use_container_width=True)
+    with st.expander("Raw Transactions (before cleaning)", expanded=False):
+        st.dataframe(raw_df, use_container_width=True)
 
-    st.subheader("Query Recommendations")
-    if res['apriori']['freq'] and res['apriori']['freq'].get(1, {}):
-        one_item_sets = list(res['apriori']['freq'][1].keys())
-        all_items = sorted(set(chain.from_iterable([list(s) for s in one_item_sets])))
+#manual + upload
+combined_df = pd.DataFrame()
+if st.session_state.uploaded_df is not None:
+    df = st.session_state.uploaded_df.copy()
+    if df.shape[1] > 1:
+        df = df[[df.columns[-1]]].rename(columns={df.columns[-1]: 'items'})
     else:
-        all_items = product_names
-    picked = st.selectbox("Pick a product to see associated items:", options=all_items)
+        df.columns = ['items']
+    combined_df = df
 
-    def recommendations_for(item, rules):
-        agg = {}
-        for r in rules:
-            if item in r['antecedent']:
-                for c in r['consequent']:
-                    best = agg.get(c)
-                    score = r['confidence']
-                    if best is None or score > best['confidence']:
-                        agg[c] = {
-                            'confidence': score,
-                            'support': r['support'],
-                            'lift': r['lift']
-                        }
-        out = [
-            {'item': k, 'confidence_pct': v['confidence']*100, 'support_pct': v['support']*100, 'lift': v['lift']}
-            for k, v in agg.items()
-        ]
-        out.sort(key=lambda x: (x['confidence_pct'], x['lift']), reverse=True)
-        return out
+if st.session_state.manual_txs:
+    extra = pd.DataFrame({'items': [", ".join(t) for t in st.session_state.manual_txs]})
+    combined_df = pd.concat([combined_df, extra], ignore_index=True) if not combined_df.empty else extra
 
-    if picked:
-        ap_recs = recommendations_for(picked, res['apriori']['rules'])
-        ec_recs = recommendations_for(picked, res['eclat']['rules'])
-        tab1, tab2 = st.tabs(["Apriori", "Eclat"])
-        with tab1:
-            if ap_recs:
-                df = pd.DataFrame(ap_recs)
-                df['strength'] = pd.cut(df['confidence_pct'], bins=[0,40,70,100],
-                                        labels=["Weak","Moderate","Strong"], include_lowest=True)
-                st.dataframe(df, use_container_width=True, hide_index=True)
-                st.write(f"**Recommendation:** Consider bundling **{picked}** with the top 1–2 items above.")
-            else:
-                st.info("No associations found for this item at current thresholds.")
-        with tab2:
-            if ec_recs:
-                df = pd.DataFrame(ec_recs)
-                df['strength'] = pd.cut(df['confidence_pct'], bins=[0,40,70,100],
-                                        labels=["Weak","Moderate","Strong"], include_lowest=True)
-                st.dataframe(df, use_container_width=True, hide_index=True)
-                st.write(f"**Recommendation:** Consider placement and promotions pairing **{picked}** with the top items.")
-            else:
-                st.info("No associations found for this item at current thresholds.")
+# ------------------------------
+#3)Preprocessing
+run_prep = st.button("Run Preprocessing")
+if run_prep and not combined_df.empty:
+    with st.spinner("Cleaning data..."):
+        cleaned, report = preprocess_transactions(
+            combined_df, prod_df_raw,
+            flag_singles=flag_singles,
+            strict_invalid=strict_invalid
+        )
+        st.session_state.cleaned = [set(t) for t in cleaned]
+        st.session_state.report = report
+        st.success("Preprocessing complete.")
+
+if st.session_state.cleaned is not None:
+    r = st.session_state.report
+    with st.expander("Preprocessing Report", expanded=True):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total issues detected", r['total_issues'])
+            st.metric("Transactions (before)", r['before_total_tx'])
+            st.metric("Empty removed", r['empty_tx_removed'])
+        with col2:
+            st.metric("Single-item removed", r['single_item_tx_removed'])
+            st.metric("Single-item flagged", r.get('single_item_flagged', 0))
+            st.metric("Duplicates removed", r['duplicate_items_removed'])
+        with col3:
+            st.metric("Invalid items removed", r['invalid_items_removed'])
+            st.metric("Valid transactions", r['after_valid_tx'])
+            st.metric("Unique products", r['unique_products'])
+
+    with st.expander("Cleaned Transactions", expanded=False):
+        clean_sample = [' , '.join(sorted(t)) for t in st.session_state.cleaned]
+        st.dataframe(pd.DataFrame({'transaction': clean_sample}), use_container_width=True, hide_index=True)
 
 st.divider()
-st.caption("Tip: run with `streamlit run streamlit_app.py`. Files are loaded from /assignment_data_mining/.")
+
+# ------------------------------
+# 4) Mining
+run_mining = st.button("Analyze")
+if run_mining:
+    if not st.session_state.cleaned:
+        st.error("Run preprocessing first.")
+    else:
+        tx = [set(t) for t in st.session_state.cleaned]
+        results = {}
+
+        # Apriori
+        with st.spinner("Running Apriori..."):
+            t0 = time.perf_counter()
+            L_ap = apriori(tx, min_support=min_support)
+            rules_ap = generate_rules(L_ap, min_conf=min_conf, n_tx=len(tx))
+            t1 = time.perf_counter()
+            results['Apriori'] = {
+                'runtime_ms': (t1 - t0) * 1000,
+                'rules': len(rules_ap)
+            }
+
+        # Eclat
+        with st.spinner("Running Eclat..."):
+            t2 = time.perf_counter()
+            L_ec = eclat(tx, min_support=min_support)
+            rules_ec = generate_rules(L_ec, min_conf=min_conf, n_tx=len(tx))
+            t3 = time.perf_counter()
+            results['Eclat'] = {
+                'runtime_ms': (t3 - t2) * 1000,
+                'rules': len(rules_ec)
+            }
+
+        st.session_state.results = results
+        st.session_state.ap_rules = rules_ap
+        st.session_state.ec_rules = rules_ec
+
+# Show performance table
+if st.session_state.results:
+    perf_df = pd.DataFrame(st.session_state.results).T
+    perf_df = perf_df[['runtime_ms', 'rules']]
+    perf_df.columns = ['Runtime (ms)', 'Rules Generated']
+    perf_df = perf_df.round(2)
+    st.subheader("Performance Comparison")
+    st.dataframe(perf_df, use_container_width=True)
+
+    st.write("**Analysis:** Eclat is usually faster due to vertical format and set intersections. "
+             "Both algorithms generate the same rules on this dataset.")
+
+# ------------------------------
+#Query recommendations
+st.subheader("Query Recommendations")
+if st.session_state.get('ap_rules') and st.session_state.ap_rules:
+    all_items = sorted({item for rule in st.session_state.ap_rules for item in rule['antecedent'] + rule['consequent']})
+else:
+    all_items = product_names
+
+picked = st.selectbox("Select a product:", options=all_items)
+
+def get_recommendations(item, rules):
+    agg = {}
+    for r in rules:
+        if item in r['antecedent']:
+            for c in r['consequent']:
+                score = r['confidence']
+                if c not in agg or score > agg[c]['confidence']:
+                    agg[c] = {
+                        'confidence': score,
+                        'support': r['support'],
+                        'lift': r['lift']
+                    }
+    out = []
+    for k, v in agg.items():
+        out.append({
+            'item': k,
+            'confidence_pct': v['confidence'] * 100,
+            'support_pct': v['support'] * 100,
+            'lift': v['lift']
+        })
+    out.sort(key=lambda x: (x['confidence_pct'], x['lift']), reverse=True)
+    return out
+
+if picked and st.session_state.get('ap_rules'):
+    ap_recs = get_recommendations(picked, st.session_state.ap_rules)
+    ec_recs = get_recommendations(picked, st.session_state.ec_rules or [])
+
+    tab1, tab2 = st.tabs(["Apriori", "Eclat"])
+
+    def show_recs(recs, name):
+        if recs:
+            df = pd.DataFrame(recs)
+
+            # Strength label: Weak / Moderate / Strong
+            df['strength'] = pd.cut(
+                df['confidence_pct'],
+                bins=[0, 40, 70, 100],
+                labels=["Weak", "Moderate", "Strong"],
+                include_lowest=True
+            )
+
+            #columns: Item, Confidence %, Support %, Lift, Strength
+            df = df[['item', 'confidence_pct', 'support_pct', 'lift', 'strength']]
+            df.columns = ['Item', 'Confidence %', 'Support %', 'Lift', 'Strength']
+
+            # Round for display
+            df['Confidence %'] = df['Confidence %'].round(2)
+            df['Support %'] = df['Support %'].round(2)
+            df['Lift'] = df['Lift'].round(2)
+
+            st.dataframe(df, use_container_width=True, hide_index=True)
+
+            # Business recommendation
+            top1 = df.iloc[0]['Item'] if len(df) > 0 else ""
+            top2 = df.iloc[1]['Item'] if len(df) > 1 else ""
+            st.write(
+                f"**Recommendation:** Place **{top1}** next to **{picked}**. "
+                f"Bundle: **{picked} + {top1}" + (f" + {top2}**" if top2 else "**") + "."
+            )
+        else:
+            st.info("No associations found.")
+
+    with tab1:
+        show_recs(ap_recs, "Apriori")
+    with tab2:
+        show_recs(ec_recs, "Eclat")
+
+st.divider()
+st.caption("Run with: `streamlit run streamlit_app.py`")
