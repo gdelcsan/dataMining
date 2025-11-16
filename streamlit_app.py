@@ -292,10 +292,6 @@ def eclat(transactions, min_support=0.2):
 # ------------------------------
 # Load local CSVs
 
-st.caption("Upload your CSVs or use the provided classroom defaults if available.")
-    up_tx = st.file_uploader("Transactions CSV (comma-separated items per row)", type=["csv"], key="tx_upload")
-    up_prod = st.file_uploader("Products CSV (valid product names)", type=["csv"], key="prod_upload")
-
 TX_PATH = "./assignment_data_mining/sample_transactions.csv"
 PROD_PATH = "./assignment_data_mining/products.csv"
 
