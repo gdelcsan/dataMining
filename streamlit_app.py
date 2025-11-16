@@ -123,15 +123,26 @@ def preprocess_transactions(df: pd.DataFrame, products_df: pd.DataFrame):
     single_count = sum(1 for t in deduped if len(t) == 1)
     deduped = [t for t in deduped if len(t) > 1]
 
-    # invalid product handling using products_df (if provided)
+        # invalid product handling using products_df (if provided)
     invalid_instances = 0
     valid_names = None
     if products_df is not None and not products_df.empty:
-        cols = [c.lower() for c in products_df.columns]
+        # normalize column names
+        cols = [c.lower().strip() for c in products_df.columns]
         products_df.columns = cols
-        name_col = 'name' if 'name' in cols else (cols[-1] if cols else None)
+
+        # Prefer 'product_name', then 'name', then last column
+        if 'product_name' in cols:
+            name_col = 'product_name'
+        elif 'name' in cols:
+            name_col = 'name'
+        else:
+            name_col = cols[-1] if cols else None
+
         if name_col is not None:
-            valid_names = set(normalize_item(x) for x in products_df[name_col].astype(str))
+            valid_names = set(
+                normalize_item(x) for x in products_df[name_col].astype(str)
+            )
 
     cleaned = []
     for t in deduped:
