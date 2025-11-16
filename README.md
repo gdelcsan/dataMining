@@ -16,7 +16,7 @@ mining. It helps identify which products are commonly bought together, generates
 
 #### Technical Stack
 
-- **Language**: [Python 3.x / JavaScript / Java]
+- **Language**: Python 3.13
 - **Key Libraries**: [List main dependencies]
 - **UI Framework**: [If applicable]
 
