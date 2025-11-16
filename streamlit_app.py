@@ -300,8 +300,8 @@ def eclat(transactions, min_support=0.2):
 # ------------------------------
 # Load local CSV paths
 
-TX_PATH = "./assignment_data_mining/sample_transactions.csv"
-PROD_PATH = "./assignment_data_mining/products.csv"
+TX_PATH = "./data/sample_transactions.csv"
+PROD_PATH = "./data/products.csv"
 
 # load products immediately
 prod_df_raw = safe_read_csv(PROD_PATH)
