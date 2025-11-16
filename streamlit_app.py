@@ -399,7 +399,7 @@ if st.session_state.manual_txs:
         # place manual only
         combined_df = extra
 
-run_prep = st.button("Reprocess")
+run_prep = st.button("Preprocess")
 if 'cleaned' not in st.session_state:
     st.session_state.cleaned = None
     st.session_state.report = None
