@@ -379,7 +379,7 @@ with col2:
 # 2) Imported Transactions
 
 st.subheader("Imported Transactions")
-st.dataframe(tx_df_raw.head(150), use_container_width=True)
+st.dataframe(tx_df_raw.head(200), use_container_width=True)
 
 # Combine imported + manual for preprocessing
 combined_df = tx_df_raw.copy()
