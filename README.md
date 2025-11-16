@@ -28,14 +28,16 @@ mining. It helps identify which products are commonly bought together, generates
 
 ##### Setup
 
-```
 # Clone or extract project
+```
 (https://github.com/gdelcsan/dataMining.git)
-
+```
 # Install dependencies
+```
 pip install streamlit pandas numpy
-
+```
 # Run application
+```
 streamlit run streamlit_app.py
 ```
 
