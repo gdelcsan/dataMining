@@ -48,8 +48,13 @@ st.markdown("""
         background-clip: text;
     }
 
-    /* Tabs */
-    .stTabs [aria-selected="false"] { color: #000000; 
+    /* File uploader */
+    div[data-testid="stFileUploader"] > label span {
+        background-color: black !important;
+        color: white !important;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
     }
     
     </style>
