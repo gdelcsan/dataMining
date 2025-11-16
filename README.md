@@ -28,6 +28,7 @@ mining. It helps identify which products are commonly bought together, generates
 
 ##### Setup
 
+```
 # Clone or extract project
 (https://github.com/gdelcsan/dataMining.git)
 
