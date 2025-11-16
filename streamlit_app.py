@@ -19,6 +19,7 @@ st.markdown("""
         border-right: 1px solid rgba(27,31,35,0.1);  
     }
     section[data-testid="stSidebar"] label { color: white; }
+    section[data-testid="stSidebar"] h2 {color: white !important; }
 
     /* Buttons */
     .stButton > button {
