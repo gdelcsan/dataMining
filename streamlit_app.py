@@ -59,7 +59,7 @@ st.markdown("""
 # Page config & title
 
 st.set_page_config(page_title="Supermarket Miner", page_icon="🛒", layout="wide")
-st.markdown('<div class="header"><h1>Interactive Supermarket Simulator</h1></div>',unsafe_allow_html=True)
+st.markdown('<div class="header"><h1>Interactive Supermarket Simulator</h1><p>Association Rule Mining</p></div>',unsafe_allow_html=True)
 
 # ------------------------------
 # Helpers
@@ -311,11 +311,8 @@ if prod_df_raw.empty:
 # ------------------------------
 # Sidebar mining parameters + custom upload
 
-st.sidebar.header("Custom Transaction File:")
-uploaded_file = st.sidebar.file_uploader(
-    "upload your own csv file",
-    type=["csv"]
-)
+st.sidebar.header("Custom Transaction File")
+uploaded_file = st.sidebar.file_uploader("upload your own csv file", type=["csv"])
 
 st.sidebar.header("Mining Parameters")
 min_support = st.sidebar.slider("Minimum Support", 0.05, 0.9, 0.2, 0.05)
