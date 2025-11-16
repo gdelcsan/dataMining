@@ -18,8 +18,8 @@ st.markdown("""
         background-image: linear-gradient(120deg, #33CCCC, #2AA7A7);
         border-right: 1px solid rgba(27,31,35,0.1);  
     }
-    section[data-testid="stSidebar"] label { color: white; }
-    section[data-testid="stSidebar"] h2 {color: white !important; }
+    section[data-testid="stSidebar"] label {color: white;}
+    section[data-testid="stSidebar"] h2 {color: white !important; text-align: left !important;}
 
     /* Buttons */
     .stButton > button {
