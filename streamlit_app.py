@@ -12,7 +12,7 @@ st.markdown("""
     <style>
     /* Sidebar container */
     section[data-testid="stSidebar"] {
-        color: #D55858;
+        color: #A72A2A;
         text-align: center;
         background-color: #9CE6E6;
         background-image: linear-gradient(120deg, #33CCCC, #2AA7A7);
@@ -46,15 +46,6 @@ st.markdown("""
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-    }
-
-    /* File uploader */
-    div[data-testid="stFileUploader"] > label span {
-        background-color: black !important;
-        color: white !important;
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-weight: 600;
     }
     
     </style>
