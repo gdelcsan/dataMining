@@ -60,7 +60,7 @@ st.markdown("""
 
 st.set_page_config(page_title="Supermarket Miner", page_icon="🛒", layout="wide")
 st.markdown(
-    '<div class="header"><h1>Interactive Supermarket Simulation with Association Rule Mining</h1></div>',
+    '<div class="header"><h1>Interactive Supermarket Simulator</h1></div>',
     unsafe_allow_html=True
 )
 
