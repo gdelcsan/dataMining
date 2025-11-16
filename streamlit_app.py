@@ -315,13 +315,24 @@ min_conf = st.sidebar.slider("Minimum Confidence", 0.05, 0.95, 0.5, 0.05)
 if 'manual_txs' not in st.session_state:
     st.session_state.manual_txs = []
 
-# Derive product names from products.csv if available; else fallback to a palette
+# Derive product names from products.csv using the product_name column
 if prod_df_raw is not None and not prod_df_raw.empty:
     cols = [c.lower() for c in prod_df_raw.columns]
     prod_df_raw.columns = cols
-    name_col = 'name' if 'name' in cols else cols[-1]
-    product_names = sorted({normalize_item(x) for x in prod_df_raw[name_col].astype(str) if normalize_item(x)})
+
+    # Prefer 'product_name', fall back to 'name', then last column if needed
+    if 'product_name' in cols:
+        name_col = 'product_name'
+    elif 'name' in cols:
+        name_col = 'name'
+    else:
+        name_col = cols[-1]
+
+    product_names = sorted(
+        {normalize_item(x) for x in prod_df_raw[name_col].astype(str) if normalize_item(x)}
+    )
 else:
+    # Fallback palette if products.csv is missing/empty
     product_names = [
         'milk','bread','eggs','butter','cheese','apples','bananas','cereal','coffee','tea',
         'yogurt','juice','chicken','beef','rice','pasta','tomato','onion','lettuce','cookies'
