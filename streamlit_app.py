@@ -300,9 +300,9 @@ if prod_df_raw.empty:
 # ------------------------------
 # Sidebar mining parameters + custom upload
 
-st.sidebar.header("Custom Transactions CSV")
+st.sidebar.header("Transaction csv:")
 uploaded_file = st.sidebar.file_uploader(
-    "Upload CSV to replace default transactions",
+    "upload your own csv file",
     type=["csv"]
 )
 
